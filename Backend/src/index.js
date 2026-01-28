@@ -118,7 +118,7 @@ if (IS_PRODUCTION) {
   app.use(express.static(frontendPath));
 
   // Handle SPA routing (fallback to index.html)
-  app.get("*", (req, res) => {
+  app.get("(.*)", (req, res) => {
     res.sendFile(path.resolve(frontendPath, "index.html"));
   });
 }
