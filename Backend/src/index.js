@@ -34,7 +34,20 @@ const PORT = process.env.PORT || 5001;
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 // Security headers
-app.use(helmet());
+// Security headers
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"], // Allow inline scripts for React
+        styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles
+        imgSrc: ["'self'", "data:", "blob:", "res.cloudinary.com", "cdn.jsdelivr.net"], // Allow images from Cloudinary & Emojis
+        connectSrc: ["'self'", "http://localhost:*", "ws://localhost:*", "wss://*"], // Allow WebSocket connections
+      },
+    },
+  })
+);
 
 // General API rate limiter
 // Development: 1000 requests / 15 min (very lenient)
