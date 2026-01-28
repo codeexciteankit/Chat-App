@@ -4,7 +4,9 @@ import { toast } from "react-hot-toast";
 import { io } from "socket.io-client";
 
 // Constants
-const SOCKET_URL = "http://localhost:5001";
+const SOCKET_URL = 
+  import.meta.env.VITE_SOCKET_URL || 
+  (import.meta.env.MODE === "production" ? window.location.origin : "http://localhost:5001");
 const ALLOWED_PROFILE_FIELDS = ["fullname", "profilePic", "phone", "bio"];
 
 /**
