@@ -53,24 +53,22 @@ app.use(
 // Development: 1000 requests / 15 min (very lenient)
 // Production: 100 requests / 15 min (strict)
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: IS_PRODUCTION ? 100 : 1000, // Much higher limit in dev
-  message: "Too many requests from this IP, please try again later.",
+  windowMs: 60 * 1000, // 1 minute
+  max: IS_PRODUCTION ? 200 : 1000, 
+  message: "Too many requests, please try again in a minute.",
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => !IS_PRODUCTION, // Disable in development if you want
+  skip: () => !IS_PRODUCTION,
 });
 
 // Strict rate limiter for auth endpoints
-// Development: 50 attempts / 15 min (lenient for testing)
-// Production: 5 attempts / 15 min (strict for security)
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: IS_PRODUCTION ? 5 : 50, // 10x more attempts in dev
-  skipSuccessfulRequests: true, // Don't count successful logins
+  windowMs: 60 * 1000, // 1 minute
+  max: IS_PRODUCTION ? 10 : 50,
+  skipSuccessfulRequests: true,
   message: IS_PRODUCTION
-    ? "Too many authentication attempts, please try again later."
-    : "Too many authentication attempts (dev mode - limit is higher). Please try again later.",
+    ? "Too many attempts, please try again in a minute."
+    : "Too many attempts. Please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
 });
