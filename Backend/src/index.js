@@ -14,7 +14,12 @@ import {
   notFoundHandler,
 } from "./middleware/errorHandler.js";
 import { validateEnv } from "./libs/validateEnv.js";
+import path from "path";
+import { fileURLToPath } from "url";
 import { requestTimeout } from "./middleware/timeout.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -106,7 +111,19 @@ app.use("/api/messages", uploadLimiter, messageRoutes);
 // Initialize Socket.io
 initSocket(server);
 
-// 404 Handler (must be after routes)
+// Deployment Configuration (Serve Frontend)
+if (IS_PRODUCTION) {
+  // Serve static files from frontend build
+  const frontendPath = path.join(__dirname, "../../Frontend/dist");
+  app.use(express.static(frontendPath));
+
+  // Handle SPA routing (fallback to index.html)
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve(frontendPath, "index.html"));
+  });
+}
+
+// 404 Handler (only if not in production or route not found above)
 app.use(notFoundHandler);
 
 // Error Handler (must be last)

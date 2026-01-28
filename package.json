@@ -1,0 +1,15 @@
+{
+    "name": "chat-app-root",
+    "version": "1.0.0",
+    "description": "MERN Chat Application",
+    "scripts": {
+        "start": "npm start --prefix Backend",
+        "build": "npm install && npm install --prefix Frontend && npm run build --prefix Frontend && npm install --prefix Backend"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "concurrently": "^8.2.2"
+    }
+}
