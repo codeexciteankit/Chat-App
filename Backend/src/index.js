@@ -94,7 +94,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(requestTimeout(30));
 
 // Health check endpoint (no rate limit)
-app.get("/", (req, res) => res.json({ status: "OK", message: "API running" }));
+// app.get("/", (req, res) => res.json({ status: "OK", message: "API running" }));
 app.get("/health", (req, res) =>
   res.json({ status: "healthy", timestamp: new Date().toISOString() })
 );
