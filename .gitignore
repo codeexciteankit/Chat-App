@@ -26,3 +26,9 @@ Thumbs.db
 # Logs
 logs/
 *.log
+
+# Documentation
+COMPLETE_PROJECT_DOCUMENTATION.md
+*.md
+!README.md
+!DEPLOYMENT_GUIDE_*.md
