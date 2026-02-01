@@ -28,7 +28,7 @@ const ACTIVITY_ITEMS = [
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const { user, isCheckingAuth, logout, updateProfile, isUpdatingProfile } =
+  const { user, isCheckingAuth, logout, updateProfile, isUpdatingProfile, deleteAccount } =
     useAuthStore();
 
   // State
@@ -173,30 +173,11 @@ const ProfilePage = () => {
    * Handle delete account
    */
   const handleDeleteAccount = useCallback(async () => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete your account? This action cannot be undone.",
-    );
-
-    if (!confirmed) return;
-
-    try {
-      const response = await fetch("/api/auth/delete-account", {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete account");
-      }
-
-      toast.success("Account deleted successfully");
-      await logout();
-      navigate("/login", { replace: true });
-    } catch (error) {
-      console.error("Delete failed:", error);
-      toast.error("Failed to delete account");
+    if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+      const success = await deleteAccount();
+      if (success) navigate("/login", { replace: true });
     }
-  }, [logout, navigate]);
+  }, [deleteAccount, navigate]);
 
   /**
    * Trigger file input

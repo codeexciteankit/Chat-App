@@ -25,7 +25,7 @@ const PREVIEW_MESSAGES = [
 
 const SettingsPage = () => {
   const { theme, setTheme } = useThemeStore();
-  const { user, logout } = useAuthStore();
+  const { user, logout, deleteAccount } = useAuthStore();
   const [notifications, setNotifications] = useState({
     message: true,
     sound: true,
@@ -36,14 +36,14 @@ const SettingsPage = () => {
     readReceipts: true,
   });
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     if (
       window.confirm(
         "Are you sure you want to delete your account? This action cannot be undone.",
       )
     ) {
-      // Implement delete account logic
-      toast.error("Account deletion not implemented yet");
+      await deleteAccount();
+      // Store handles redirect/state update, but we are inside the app, so the app will naturally redirect due to state change
     }
   };
 

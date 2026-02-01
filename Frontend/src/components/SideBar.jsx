@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useChatStore } from "../Store/useChatStore";
 import { useAuthStore } from "../Store/useAuthStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
-import { Users } from "lucide-react";
+import { Users, Search } from "lucide-react";
 
 /**
  * UserItem - Displays individual user in sidebar
@@ -50,19 +50,22 @@ const Sidebar = () => {
     useChatStore();
   const { onlineUsers } = useAuthStore();
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch users on component mount
   useEffect(() => {
     getUsers();
   }, [getUsers]);
 
-  // Filter users based on online status
+  // Filter users based on online status and search query
   const filteredUsers = useMemo(
     () =>
-      showOnlineOnly
-        ? users.filter((user) => onlineUsers.includes(user._id))
-        : users,
-    [users, onlineUsers, showOnlineOnly],
+      users.filter((user) => {
+        const matchesOnline = showOnlineOnly ? onlineUsers.includes(user._id) : true;
+        const matchesSearch = user.fullname.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesOnline && matchesSearch;
+      }),
+    [users, onlineUsers, showOnlineOnly, searchQuery],
   );
 
   // Memoize the callback to prevent unnecessary re-renders of UserItem
@@ -106,6 +109,20 @@ const Sidebar = () => {
           <span className="text-xs text-base-content/70 flex-shrink-0">
             ({onlineCount} online)
           </span>
+        </div>
+        
+        {/* Search Input */}
+        <div className="mt-3 relative w-full">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="size-4 text-base-content/50" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search contacts..."
+            className="input input-sm input-bordered w-full pl-10 bg-base-100"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
       </div>
 
