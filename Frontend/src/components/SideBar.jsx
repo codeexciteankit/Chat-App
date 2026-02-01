@@ -33,8 +33,8 @@ const UserItem = React.memo(({ user, isSelected, isOnline, onSelect }) => (
       )}
     </div>
 
-    {/* User info - only visible on larger screens */}
-    <div className="hidden lg:block text-left min-w-0 flex-1">
+    {/* User info - visible on all screens now that sidebar is full width on mobile */}
+    <div className="text-left min-w-0 flex-1 block">
       <div className="font-medium truncate">{user.fullname}</div>
       <div className="text-sm text-base-content/60">
         {isOnline ? "Online" : "Offline"}
@@ -83,16 +83,16 @@ const Sidebar = () => {
   const onlineCount = Math.max(0, onlineUsers.length - 1);
 
   return (
-    <aside className="h-full w-20 lg:w-72 border-r border-base-300 flex flex-col transition-all duration-200">
+    <aside className="h-full w-full lg:w-72 border-r border-base-300 flex flex-col transition-all duration-200">
       {/* Header */}
       <div className="border-b border-base-300 w-full p-5 flex-shrink-0">
         <div className="flex items-center gap-2">
           <Users className="size-6 flex-shrink-0" />
-          <span className="font-medium hidden lg:block">Contacts</span>
+          <span className="font-medium block">Contacts</span>
         </div>
 
         {/* Online filter toggle */}
-        <div className="mt-3 hidden lg:flex items-center gap-2">
+        <div className="mt-3 flex items-center gap-2">
           <label className="cursor-pointer flex items-center gap-2">
             <input
               type="checkbox"

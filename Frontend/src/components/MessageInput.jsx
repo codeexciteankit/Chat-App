@@ -180,7 +180,7 @@ const MessageInput = () => {
           {/* Emoji Button */}
           <button
             type="button"
-            className={`hidden sm:flex btn btn-circle btn-sm transition-colors ${
+            className={`flex btn btn-circle btn-sm transition-colors ${
               showEmojiPicker ? "bg-primary text-white" : "btn-ghost"
             }`}
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
@@ -193,7 +193,7 @@ const MessageInput = () => {
           {/* Image Button */}
           <button
             type="button"
-            className={`hidden sm:flex btn btn-circle btn-sm transition-colors ${
+            className={`flex btn btn-circle btn-sm transition-colors ${
               imagePreview ? "bg-primary text-white" : "btn-ghost"
             }`}
             onClick={() => fileInputRef.current?.click()}

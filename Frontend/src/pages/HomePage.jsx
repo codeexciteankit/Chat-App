@@ -9,13 +9,13 @@ const HomePage = () => {
 
   return (
     <div className="w-full h-full flex bg-base-200 overflow-hidden">
-      {/* Sidebar */}
-      <div className="flex-shrink-0">
+      {/* Sidebar - Visible on mobile if no user selected, always visible on desktop */}
+      <div className={`flex-shrink-0 w-full lg:w-72 ${selectedUser ? "hidden lg:block" : "block"}`}>
         <Sidebar />
       </div>
 
-      {/* Chat Area - Main Content */}
-      <div className="flex-1 overflow-hidden">
+      {/* Chat Area - Visible on mobile if user selected, always visible on desktop */}
+      <div className={`flex-1 overflow-hidden w-full ${!selectedUser ? "hidden lg:flex" : "flex"}`}>
         {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
       </div>
     </div>

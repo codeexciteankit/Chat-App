@@ -4,7 +4,7 @@ import { useAuthStore } from "../Store/useAuthStore";
 import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { formatMessageTime, formatMessageDate } from "../lib/utils";
-import { Trash2 } from "lucide-react";
+import { Trash2, ArrowLeft } from "lucide-react";
 
 // Memoized message item component for performance
 const MessageItem = React.memo(
@@ -199,6 +199,14 @@ const ChatHeader = React.memo(({ onClearChat, onToggleSelectMode, isSelectMode, 
     <div className="p-2.5 border-b border-base-300 flex-shrink-0">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
+          {/* Back Button - Mobile only */}
+          <button
+            onClick={() => setSelectedUser(null)}
+            className="lg:hidden btn btn-ghost btn-circle btn-sm -ml-2"
+          >
+            <ArrowLeft className="size-5" />
+          </button>
+
           <div className="avatar">
             <div className="size-10 rounded-full">
               <img
