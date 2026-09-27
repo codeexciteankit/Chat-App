@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://your-live-demo-link.com">🚀 Live Demo</a> •
+  <a href="[https://your-live-demo-link.com](https://chat-app-z2yi.onrender.com/login)">🚀 Live Demo</a> •
   <a href="#-features">✨ Features</a> •
   <a href="#-technical-stack">🛠 Tech Stack</a> •
   <a href="#-architecture--flow">🧠 Architecture</a>
