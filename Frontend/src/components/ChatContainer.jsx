@@ -235,9 +235,10 @@ const ChatHeader = React.memo(
     const confirmUnfriend = async () => {
       setShowUnfriendModal(false);
       setIsUnfriending(true);
-      await unfriendUser(selectedUser._id);
-      setIsUnfriending(false);
+      const userToRemoveId = selectedUser._id;
       setSelectedUser(null);
+      await unfriendUser(userToRemoveId);
+      setIsUnfriending(false);
     };
 
     return (

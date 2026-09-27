@@ -41,6 +41,14 @@ export const initSocket = (server) => {
         socket.handshake.auth?.token ||
         socket.handshake.headers?.authorization?.replace("Bearer ", "");
 
+      if (token) {
+        try {
+          token = decodeURIComponent(token);
+        } catch {
+          // If decoding fails, keep raw token
+        }
+      }
+
       if (!token) {
         return next(new Error("Authentication required"));
       }

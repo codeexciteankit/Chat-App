@@ -282,6 +282,7 @@ export const useAuthStore = create((set, get) => ({
 
     try {
       const newSocket = io(SOCKET_URL, {
+        withCredentials: true,
         query: { userId: user._id },
         reconnection: true,
         reconnectionDelay: 1000,
@@ -291,6 +292,11 @@ export const useAuthStore = create((set, get) => ({
 
       newSocket.on("connect", () => {
         console.log("Socket connected:", newSocket.id);
+        import("./useFriendStore.js")
+          .then(({ useFriendStore }) => {
+            useFriendStore.getState().subscribeToFriendEvents();
+          })
+          .catch((e) => console.error("Failed to subscribe to friend events:", e));
       });
 
       newSocket.on("getOnlineUsers", (userIds) => {

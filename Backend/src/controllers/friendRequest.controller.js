@@ -254,28 +254,29 @@ export const removeFriend = async (req, res) => {
     const userId = req.user._id;
     const { friendId } = req.params;
 
-    // Delete accepted request in either direction
-    const result = await FriendRequest.deleteOne({
-      status: "accepted",
+    // Delete request in either direction (whether accepted or pending)
+    await FriendRequest.deleteMany({
       $or: [
         { senderId: userId, receiverId: friendId },
         { senderId: friendId, receiverId: userId },
       ],
     });
 
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ error: "Friendship not found" });
-    }
-
     // Notify both parties in real-time so their UI updates instantly
     try {
       const friendSocketId = getReceiverSocketId(friendId);
       if (friendSocketId && io) {
-        io.to(friendSocketId).emit("unfriended", { removedBy: userId.toString() });
+        io.to(friendSocketId).emit("unfriended", {
+          removedBy: userId.toString(),
+          friendId: friendId.toString(),
+        });
       }
       const selfSocketId = getReceiverSocketId(userId);
       if (selfSocketId && io) {
-        io.to(selfSocketId).emit("unfriended", { removedBy: userId.toString() });
+        io.to(selfSocketId).emit("unfriended", {
+          removedBy: userId.toString(),
+          friendId: friendId.toString(),
+        });
       }
     } catch (socketErr) {
       console.warn("Socket emission error in removeFriend:", socketErr.message);

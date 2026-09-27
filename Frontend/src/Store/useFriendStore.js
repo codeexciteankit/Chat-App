@@ -124,7 +124,19 @@ export const useFriendStore = create((set) => ({
       await axiosInstance.delete(`/friends/${friendId}`);
       toast.success("Removed from friends");
 
-      // Update search results immediately
+      // 1. If currently chatting with this user, close the active chat immediately
+      const currentSelected = useChatStore.getState().selectedUser;
+      if (currentSelected?._id === friendId) {
+        useChatStore.getState().setSelectedUser(null);
+      }
+
+      // 2. Optimistically remove from sidebar contacts list immediately
+      const currentUsers = useChatStore.getState().users;
+      useChatStore.setState({
+        users: currentUsers.filter((u) => u._id !== friendId),
+      });
+
+      // 3. Update search results immediately
       set((state) => ({
         searchResults: state.searchResults.map((u) =>
           u._id === friendId
@@ -133,8 +145,8 @@ export const useFriendStore = create((set) => ({
         ),
       }));
 
-      // Refresh chat sidebar contacts
-      useChatStore.getState().getUsers();
+      // 4. Refresh chat sidebar contacts from backend
+      await useChatStore.getState().getUsers();
     } catch (error) {
       console.error("Failed to unfriend user:", error);
       const msg = error.response?.data?.error || "Failed to remove friend";
@@ -229,18 +241,38 @@ export const useFriendStore = create((set) => ({
       }));
     });
 
-    socket.on("unfriended", () => {
-      // Reset any search results that showed "friends" status,
-      // since we don't know which user was removed from here.
-      // Re-searching will get fresh relationship statuses.
+    socket.on("unfriended", (data = {}) => {
+      const removedBy = data?.removedBy;
+      const friendId = data?.friendId;
+
+      // 1. Close active chat if chatting with either party
+      const currentSelected = useChatStore.getState().selectedUser;
+      if (
+        currentSelected &&
+        (!removedBy || currentSelected._id === removedBy || currentSelected._id === friendId)
+      ) {
+        useChatStore.getState().setSelectedUser(null);
+        toast("Contact removed. Chat closed.", { icon: "ℹ️" });
+      }
+
+      // 2. Optimistically remove from sidebar contacts list in useChatStore
+      const currentUsers = useChatStore.getState().users;
+      useChatStore.setState({
+        users: currentUsers.filter(
+          (u) => (!removedBy || (u._id !== removedBy && u._id !== friendId))
+        ),
+      });
+
+      // 3. Update search results
       set((state) => ({
         searchResults: state.searchResults.map((u) =>
-          u.relationship === "friends"
+          u._id === removedBy || u._id === friendId || u.relationship === "friends"
             ? { ...u, relationship: "none", requestId: null }
             : u,
         ),
       }));
-      // Refresh sidebar contacts list
+
+      // 4. Refresh sidebar contacts from backend
       useChatStore.getState().getUsers();
     });
   },
