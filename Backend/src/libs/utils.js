@@ -14,7 +14,5 @@ export const generateToken = (userID, res) => {
   };
   
   res.cookie("jwt", token, cookieOptions);
-  console.log("Cookie set for user:", userID, "with options:", cookieOptions);
-  
   return token;
 };

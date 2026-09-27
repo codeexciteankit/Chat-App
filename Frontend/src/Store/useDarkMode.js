@@ -35,7 +35,7 @@ export const themes = [
   "winter",
 ];
 
-export const useTheme = create((set, get) => ({
+export const useTheme = create((set) => ({
   currentTheme: (() => {
     const stored = localStorage.getItem("theme") || "light";
     // Apply initial theme

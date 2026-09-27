@@ -3,13 +3,47 @@ import Message from "../models/message.model.js";
 import cloudinary from "../libs/cloudinary.js";
 import { getReceiverSocketId, io } from "../libs/socket.js";
 import xss from "xss";
+import FriendRequest from "../models/friendRequest.model.js";
+import BlockedUser from "../models/blockedUser.model.js";
+import { isMutuallyBlocked } from "./blockUser.controller.js";
 
 export const getUserForSidebar = async (req, res) => {
   try {
     const loggedInUserId = req.user._id;
+
+    // Get accepted friends only
+    const friendRequests = await FriendRequest.find({
+      status: "accepted",
+      $or: [{ senderId: loggedInUserId }, { receiverId: loggedInUserId }],
+    });
+
+    const friendIds = friendRequests.map((f) => {
+      return f.senderId.toString() === loggedInUserId.toString()
+        ? f.receiverId
+        : f.senderId;
+    });
+
+    // Get all block relations involving current user
+    const blockedRecords = await BlockedUser.find({
+      $or: [
+        { userId: loggedInUserId },
+        { blockedUserId: loggedInUserId },
+      ],
+    });
+    const blockedUserIds = blockedRecords.map((b) =>
+      b.userId.toString() === loggedInUserId.toString()
+        ? b.blockedUserId
+        : b.userId,
+    );
+
+    // Filter: only friends, exclude blocked, and exclude disabled/deleted accounts
+    // Include lastSeen field for displaying user status
     const filteredUsers = await User.find({
-      _id: { $ne: loggedInUserId },
-    }).select("-password");
+      _id: { $in: friendIds, $nin: blockedUserIds },
+      isDisabled: { $ne: true },
+    })
+      .select("-password")
+      .select("+lastSeen");
 
     res.status(200).json(filteredUsers);
   } catch (error) {
@@ -69,6 +103,25 @@ export const sendMessage = async (req, res) => {
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
 
+    // Check if receiver is blocking sender or sender is blocking receiver (single query)
+    const isBlocked = await isMutuallyBlocked(senderId, receiverId);
+    if (isBlocked) {
+      return res.status(403).json({ error: "You cannot message this user" });
+    }
+
+    // Check if users are friends
+    const friendRequest = await FriendRequest.findOne({
+      status: "accepted",
+      $or: [
+        { senderId, receiverId },
+        { senderId: receiverId, receiverId: senderId },
+      ],
+    });
+
+    if (!friendRequest) {
+      return res.status(403).json({ error: "You must be friends to message" });
+    }
+
     if (!text && !image) {
       return res
         .status(400)
@@ -86,7 +139,7 @@ export const sendMessage = async (req, res) => {
       text = xss(text, {
         whiteList: {}, // No HTML tags allowed
         stripIgnoreTag: true, // Remove all HTML
-        stripIgnoreTagBody: ['script', 'style'] // Remove content too
+        stripIgnoreTagBody: ["script", "style"], // Remove content too
       });
     }
 
@@ -103,9 +156,9 @@ export const sendMessage = async (req, res) => {
         console.log("Image uploaded successfully:", imageUrl);
       } catch (uploadError) {
         console.error("Cloudinary upload error:", uploadError);
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: "Failed to upload image",
-          details: uploadError.message 
+          details: uploadError.message,
         });
       }
     }
@@ -147,13 +200,17 @@ export const deleteMessage = async (req, res) => {
     const isSender = message.senderId.toString() === userId.toString();
 
     // DELETE FOR EVERYONE - only sender can do this
-    if (deleteForEveryone === 'true') {
+    if (deleteForEveryone === "true") {
       if (!isSender) {
-        return res.status(403).json({ error: "Only the sender can delete for everyone" });
+        return res
+          .status(403)
+          .json({ error: "Only the sender can delete for everyone" });
       }
 
       if (message.isDeleted) {
-        return res.status(400).json({ error: "Message already deleted for everyone" });
+        return res
+          .status(400)
+          .json({ error: "Message already deleted for everyone" });
       }
 
       // Soft delete for everyone
@@ -171,7 +228,7 @@ export const deleteMessage = async (req, res) => {
         });
       }
 
-      return res.status(200).json({ 
+      return res.status(200).json({
         message: "Message deleted for everyone",
         messageId: message._id,
       });
@@ -181,7 +238,9 @@ export const deleteMessage = async (req, res) => {
     else {
       // Check if already deleted for this user
       if (message.deletedFor && message.deletedFor.includes(userId)) {
-        return res.status(400).json({ error: "Message already deleted for you" });
+        return res
+          .status(400)
+          .json({ error: "Message already deleted for you" });
       }
 
       // Add user to deletedFor array
@@ -193,7 +252,7 @@ export const deleteMessage = async (req, res) => {
 
       // No socket event needed - only affects this user
 
-      return res.status(200).json({ 
+      return res.status(200).json({
         message: "Message deleted for you",
         messageId: message._id,
       });
@@ -209,40 +268,21 @@ export const clearChat = async (req, res) => {
     const { id: otherUserId } = req.params;
     const myId = req.user._id;
 
-    // Find all messages between the two users
-    const messages = await Message.find({
-      $or: [
-        { senderId: myId, receiverId: otherUserId },
-        { senderId: otherUserId, receiverId: myId },
-      ],
-    });
+    // Single updateMany instead of N individual saves
+    const result = await Message.updateMany(
+      {
+        $or: [
+          { senderId: myId, receiverId: otherUserId },
+          { senderId: otherUserId, receiverId: myId },
+        ],
+        deletedFor: { $ne: myId }, // Skip already-deleted ones
+      },
+      { $addToSet: { deletedFor: myId } }, // $addToSet prevents duplicates
+    );
 
-    if (messages.length === 0) {
-      return res.status(200).json({ 
-        message: "No messages to clear",
-        deletedCount: 0,
-      });
-    }
-
-    // Add current user to deletedFor array for all messages
-    let deletedCount = 0;
-    for (const message of messages) {
-      // Skip if already deleted for this user
-      if (message.deletedFor && message.deletedFor.includes(myId)) {
-        continue;
-      }
-
-      if (!message.deletedFor) {
-        message.deletedFor = [];
-      }
-      message.deletedFor.push(myId);
-      await message.save();
-      deletedCount++;
-    }
-
-    return res.status(200).json({ 
+    return res.status(200).json({
       message: "Chat cleared successfully",
-      deletedCount,
+      deletedCount: result.modifiedCount,
     });
   } catch (error) {
     console.log("Error in clearChat: ", error.message);
@@ -260,45 +300,23 @@ export const batchDeleteMessages = async (req, res) => {
     }
 
     if (messageIds.length > 100) {
-      return res.status(400).json({ error: "Cannot delete more than 100 messages at once" });
+      return res
+        .status(400)
+        .json({ error: "Cannot delete more than 100 messages at once" });
     }
 
-    const deletedMessages = [];
-    const errors = [];
+    // Single updateMany instead of N individual saves
+    const result = await Message.updateMany(
+      {
+        _id: { $in: messageIds },
+        deletedFor: { $ne: userId }, // Only update messages not already deleted for user
+      },
+      { $addToSet: { deletedFor: userId } },
+    );
 
-    for (const messageId of messageIds) {
-      try {
-        const message = await Message.findById(messageId);
-
-        if (!message) {
-          errors.push({ messageId, error: "Message not found" });
-          continue;
-        }
-
-        // Check if already deleted for this user
-        if (message.deletedFor && message.deletedFor.includes(userId)) {
-          errors.push({ messageId, error: "Already deleted for you" });
-          continue;
-        }
-
-        // Add user to deletedFor array
-        if (!message.deletedFor) {
-          message.deletedFor = [];
-        }
-        message.deletedFor.push(userId);
-        await message.save();
-
-        deletedMessages.push(messageId);
-      } catch (error) {
-        errors.push({ messageId, error: error.message });
-      }
-    }
-
-    return res.status(200).json({ 
-      message: `Successfully deleted ${deletedMessages.length} messages`,
-      deletedCount: deletedMessages.length,
-      deletedMessages,
-      errors: errors.length > 0 ? errors : undefined,
+    return res.status(200).json({
+      message: `Successfully deleted ${result.modifiedCount} messages`,
+      deletedCount: result.modifiedCount,
     });
   } catch (error) {
     console.log("Error in batchDeleteMessages: ", error.message);

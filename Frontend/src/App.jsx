@@ -124,7 +124,7 @@ const App = () => {
   return (
     <div
       data-theme={theme}
-      className="h-screen w-screen flex flex-col bg-base-200 overflow-hidden"
+      className="h-dvh min-h-dvh w-full flex flex-col bg-base-200 overflow-hidden"
     >
       {/* Navbar - Fixed at top */}
       <div className="flex-shrink-0 z-40">
@@ -132,7 +132,7 @@ const App = () => {
       </div>
 
       {/* Main Content Area - Scrollable */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <Routes>{routeElements}</Routes>
       </div>
 

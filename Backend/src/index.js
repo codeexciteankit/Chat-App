@@ -8,11 +8,10 @@ import http from "http";
 import { connectDB } from "./libs/db.js";
 import authRoutes from "./routes/auth.routes.js";
 import messageRoutes from "./routes/message.routes.js";
+import friendRoutes from "./routes/friends.routes.js";
+import blockRoutes from "./routes/block.routes.js";
 import { initSocket } from "./libs/socket.js";
-import {
-  errorHandler,
-  notFoundHandler,
-} from "./middleware/errorHandler.js";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { validateEnv } from "./libs/validateEnv.js";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -42,11 +41,22 @@ app.use(
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", "'unsafe-inline'"], // Allow inline scripts for React
         styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles
-        imgSrc: ["'self'", "data:", "blob:", "res.cloudinary.com", "cdn.jsdelivr.net"], // Allow images from Cloudinary & Emojis
-        connectSrc: ["'self'", "http://localhost:*", "ws://localhost:*", "wss://*"], // Allow WebSocket connections
+        imgSrc: [
+          "'self'",
+          "data:",
+          "blob:",
+          "res.cloudinary.com",
+          "cdn.jsdelivr.net",
+        ], // Allow images from Cloudinary & Emojis
+        connectSrc: [
+          "'self'",
+          "http://localhost:*",
+          "ws://localhost:*",
+          "wss://*",
+        ], // Allow WebSocket connections
       },
     },
-  })
+  }),
 );
 
 // General API rate limiter
@@ -54,7 +64,7 @@ app.use(
 // Production: 100 requests / 15 min (strict)
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: IS_PRODUCTION ? 200 : 1000, 
+  max: IS_PRODUCTION ? 200 : 1000,
   message: "Too many requests, please try again in a minute.",
   standardHeaders: true,
   legacyHeaders: false,
@@ -93,7 +103,7 @@ app.use(
       process.env.FRONTEND_URL,
     ].filter(Boolean),
     credentials: true,
-  })
+  }),
 );
 
 // Body parsers
@@ -107,7 +117,7 @@ app.use(requestTimeout(30));
 // Health check endpoint (no rate limit)
 // app.get("/", (req, res) => res.json({ status: "OK", message: "API running" }));
 app.get("/health", (req, res) =>
-  res.json({ status: "healthy", timestamp: new Date().toISOString() })
+  res.json({ status: "healthy", timestamp: new Date().toISOString() }),
 );
 
 // Apply rate limiters
@@ -117,7 +127,9 @@ app.use("/api/auth/signup", authLimiter);
 
 // ROUTES
 app.use("/api/auth", authRoutes);
-app.use("/api/messages", uploadLimiter, messageRoutes);
+app.use("/api/messages", messageRoutes);
+app.use("/api/friends", friendRoutes);
+app.use("/api/users", blockRoutes);
 
 // Initialize Socket.io
 initSocket(server);
@@ -140,9 +152,19 @@ app.use(notFoundHandler);
 // Error Handler (must be last)
 app.use(errorHandler);
 
-// Start server
-server.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
-  console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
-  connectDB();
-});
+// Connect to the database before accepting requests that depend on it.
+const startServer = async () => {
+  try {
+    await connectDB();
+    server.listen(PORT, () => {
+      console.log(`🚀 Server is running on port ${PORT}`);
+      console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
+    });
+  } catch (err) {
+    console.error(`❌ Server startup aborted: MongoDB is unavailable (${err.message}).`);
+    console.error("👉 Please ensure MongoDB is running (e.g. run 'net start MongoDB' in an Admin terminal or verify MONGODB_URI in Backend/.env).");
+    process.exitCode = 1;
+  }
+};
+
+startServer();

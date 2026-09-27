@@ -144,8 +144,14 @@ export const formatFileSize = (bytes) => {
 export const sanitizeText = (text) => {
   if (!text) return text;
   
+  // Remove inline event handlers (e.g. onclick="...") and javascript: URLs
+  const cleaned = text
+    .replace(/\bon\w+\s*=\s*(['"]).*?\1/gi, '')
+    .replace(/\bon\w+\s*=\s*[^\s>]+/gi, '')
+    .replace(/javascript\s*:/gi, '');
+
   const div = document.createElement('div');
-  div.textContent = text;
+  div.textContent = cleaned;
   return div.innerHTML;
 };
 

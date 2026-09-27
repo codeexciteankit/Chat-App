@@ -14,8 +14,9 @@ import {
   Trash2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import toast from "react-hot-toast";
+import { API_URL, axiosInstance } from "../lib/axios";
 
 // Constants
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -36,7 +37,22 @@ const ProfilePage = () => {
   const [name, setName] = useState(user?.fullname || user?.name || "");
   const [isUploading, setIsUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
+  const [oidc, setOidc] = useState({ enabled: false, provider: "" });
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+    axiosInstance.get("/auth/oauth/oidc/status")
+      .then((response) => active && setOidc(response.data))
+      .catch(() => active && setOidc({ enabled: false, provider: "" }));
+    return () => { active = false; };
+  }, []);
+
+  const handleLinkOidc = useCallback(() => {
+    const url = new URL(`${API_URL}/auth/oauth/oidc/link`, window.location.origin);
+    url.searchParams.set("returnTo", "/profile");
+    window.location.assign(url.toString());
+  }, []);
 
   /**
    * Handle image upload with validation
@@ -189,7 +205,7 @@ const ProfilePage = () => {
   // Loading state
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
         <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mb-4" />
         <p className="text-gray-600 dark:text-gray-300">
           Loading your profile...
@@ -208,13 +224,13 @@ const ProfilePage = () => {
   const memberSince = user.createdAt?.split("T")[0] || "—";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 p-4 md:p-6">
+    <div className="min-h-full bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header Section */}
-        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 md:p-8 mb-6">
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 mb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             {/* Profile Info */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
               {/* Avatar */}
               <div className="relative group">
                 <div
@@ -267,15 +283,15 @@ const ProfilePage = () => {
               </div>
 
               {/* Name and Info */}
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 {isEditing ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       maxLength={MAX_NAME_LENGTH}
-                      className="text-2xl md:text-3xl font-bold bg-transparent text-white 
+                      className="min-w-0 w-full text-xl sm:text-2xl md:text-3xl font-bold bg-transparent text-white
                                border-b border-white/50 focus:outline-none focus:border-white 
                                focus:ring-2 focus:ring-white/30"
                       autoFocus
@@ -298,8 +314,8 @@ const ProfilePage = () => {
                     </button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-2xl md:text-3xl font-bold text-white">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <h1 className="truncate text-xl sm:text-2xl md:text-3xl font-bold text-white">
                       {displayName}
                     </h1>
                     <button
@@ -311,7 +327,7 @@ const ProfilePage = () => {
                     </button>
                   </div>
                 )}
-                <p className="text-indigo-100 mt-1">{user.email}</p>
+                <p className="truncate text-indigo-100 mt-1">{user.email}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <div className="px-3 py-1 bg-white/20 rounded-full text-xs text-white">
                     {user.role || "Member"}
@@ -340,7 +356,7 @@ const ProfilePage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Profile Info */}
           <div className="lg:col-span-2">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6">
               <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
                 <User className="h-5 w-5 text-indigo-600" />
                 Personal Information
@@ -390,7 +406,7 @@ const ProfilePage = () => {
           </div>
 
           {/* Right Column - Activity */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6">
             <h3 className="font-bold text-gray-800 dark:text-white mb-4">
               Recent Activity
             </h3>
@@ -415,6 +431,14 @@ const ProfilePage = () => {
 
         {/* Action Buttons */}
         <div className="mt-8 flex flex-col sm:flex-row gap-4 sm:justify-end">
+          {oidc.enabled && (
+            <button
+              onClick={handleLinkOidc}
+              className="px-6 py-2 border border-indigo-300 dark:border-indigo-600 text-indigo-600 dark:text-indigo-300 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+            >
+              Link {oidc.provider || "Single Sign-On"}
+            </button>
+          )}
           <button
             onClick={handleDownloadData}
             className="px-6 py-2 border border-gray-300 dark:border-gray-600 

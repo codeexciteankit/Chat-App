@@ -4,9 +4,11 @@ import { toast } from "react-hot-toast";
 import { io } from "socket.io-client";
 
 // Constants
-const SOCKET_URL = 
-  import.meta.env.VITE_SOCKET_URL || 
-  (import.meta.env.MODE === "production" ? window.location.origin : "http://localhost:5001");
+const SOCKET_URL =
+  import.meta.env.VITE_SOCKET_URL ||
+  (import.meta.env.MODE === "production"
+    ? window.location.origin
+    : "http://localhost:5001");
 const ALLOWED_PROFILE_FIELDS = ["fullname", "profilePic", "phone", "bio"];
 
 /**
@@ -256,7 +258,9 @@ export const useAuthStore = create((set, get) => ({
     } catch (error) {
       console.error("deleteAccount error:", error);
       const message =
-        error.response?.data?.message || error.message || "Failed to delete account";
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to delete account";
       toast.error(message);
       return false;
     } finally {
@@ -271,7 +275,10 @@ export const useAuthStore = create((set, get) => ({
     const { user, socket } = get();
 
     // Don't create new connection if already connected
-    if (!user || socket?.connected) return;
+    if (!user || socket?.connected) {
+      console.log("Socket already connected or user not available");
+      return;
+    }
 
     try {
       const newSocket = io(SOCKET_URL, {
@@ -287,8 +294,16 @@ export const useAuthStore = create((set, get) => ({
       });
 
       newSocket.on("getOnlineUsers", (userIds) => {
-        console.log("Online users:", userIds);
+        console.log("Online users updated:", userIds);
         set({ onlineUsers: Array.isArray(userIds) ? userIds : [] });
+      });
+
+      newSocket.on("userTyping", (senderId) => {
+        console.log("User typing event received for:", senderId);
+      });
+
+      newSocket.on("userStopTyping", (senderId) => {
+        console.log("User stop typing event received for:", senderId);
       });
 
       newSocket.on("disconnect", () => {
@@ -300,6 +315,7 @@ export const useAuthStore = create((set, get) => ({
       });
 
       set({ socket: newSocket });
+      console.log("Socket connection established");
     } catch (err) {
       console.error("Failed to connect socket:", err);
     }

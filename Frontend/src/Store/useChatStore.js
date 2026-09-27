@@ -212,8 +212,6 @@ export const useChatStore = create((set, get) => ({
    */
   deleteMessage: async (messageId, deleteForEveryone = false) => {
     const { messages } = get();
-    const currentUserId = useAuthStore.getState().user?._id;
-
     try {
       if (deleteForEveryone) {
         // DELETE FOR EVERYONE - updates UI to show deleted state
@@ -340,10 +338,19 @@ export const useChatStore = create((set, get) => ({
    * Set the selected user for chatting
    */
   setSelectedUser: (selectedUser) => {
+    // Stop any active typing indicator for the current conversation
+    // before switching to a new one to prevent leaked "Typing..." indicators
+    const { selectedUser: currentUser } = get();
+    if (currentUser) {
+      const socket = useAuthStore.getState().socket;
+      if (socket?.connected) {
+        socket.emit("stopTyping", currentUser._id);
+      }
+    }
     // Cleanup old subscriptions
     get().unsubscribeFromMessages();
-    // Clear typing users
-    set({ selectedUser, typingUsers: new Set() });
+    // Clear typing users and reset pagination
+    set({ selectedUser, typingUsers: new Set(), messages: [], hasMore: false, cursor: null });
   },
 
   /**
@@ -386,9 +393,9 @@ export const useChatStore = create((set, get) => ({
       return;
     }
 
+    const previousMessages = messages;
     try {
       // Optimistically clear messages
-      const previousMessages = messages;
       set({ messages: [] });
 
       const res = await axiosInstance.delete(`/messages/clear/${selectedUser._id}`);
@@ -398,7 +405,7 @@ export const useChatStore = create((set, get) => ({
       console.error("Failed to clear chat:", error);
       
       // Revert on error
-      set({ messages: get().messages });
+      set({ messages: previousMessages });
       
       const errorMessage =
         error.response?.data?.error ||
@@ -422,9 +429,9 @@ export const useChatStore = create((set, get) => ({
       return;
     }
 
+    const previousMessages = messages;
     try {
       // Optimistically remove messages
-      const previousMessages = messages;
       set({
         messages: messages.filter((msg) => !messageIds.includes(msg._id)),
       });
@@ -438,7 +445,7 @@ export const useChatStore = create((set, get) => ({
       console.error("Failed to delete messages:", error);
 
       // Revert on error
-      set({ messages: get().messages });
+      set({ messages: previousMessages });
 
       const errorMessage =
         error.response?.data?.error ||

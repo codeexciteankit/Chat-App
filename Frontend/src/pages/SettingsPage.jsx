@@ -25,7 +25,7 @@ const PREVIEW_MESSAGES = [
 
 const SettingsPage = () => {
   const { theme, setTheme } = useThemeStore();
-  const { user, logout, deleteAccount } = useAuthStore();
+  const { user, deleteAccount } = useAuthStore();
   const [notifications, setNotifications] = useState({
     message: true,
     sound: true,
@@ -53,7 +53,7 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-base-200 p-4 md:p-6" data-theme={theme}>
+    <div className="min-h-full bg-base-200 p-3 sm:p-4 md:p-6 overflow-y-auto" data-theme={theme}>
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center">
@@ -64,7 +64,7 @@ const SettingsPage = () => {
         </div>
 
         {/* Theme Section */}
-        <div className="bg-base-100 rounded-2xl shadow-lg p-6">
+        <div className="bg-base-100 rounded-2xl shadow-lg p-4 sm:p-6">
           <div className="flex items-center gap-3 mb-4">
             {theme === "dark" ? (
               <Moon className="h-5 w-5" />
@@ -171,14 +171,14 @@ const SettingsPage = () => {
         </div>
 
         {/* Notifications Section */}
-        <div className="bg-base-100 rounded-2xl shadow-lg p-6">
+        <div className="bg-base-100 rounded-2xl shadow-lg p-4 sm:p-6">
           <div className="flex items-center gap-3 mb-4">
             <Bell className="h-5 w-5" />
             <h2 className="text-xl font-semibold">Notifications</h2>
           </div>
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
                 <p className="font-medium">Message Notifications</p>
                 <p className="text-sm text-base-content/70">
                   Get notified when you receive new messages
@@ -196,8 +196,8 @@ const SettingsPage = () => {
                 }
               />
             </div>
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
                 <p className="font-medium">Sound Notifications</p>
                 <p className="text-sm text-base-content/70">
                   Play sound for new messages
@@ -215,8 +215,8 @@ const SettingsPage = () => {
                 }
               />
             </div>
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
                 <p className="font-medium">Desktop Notifications</p>
                 <p className="text-sm text-base-content/70">
                   Show desktop notifications
@@ -238,14 +238,14 @@ const SettingsPage = () => {
         </div>
 
         {/* Privacy Section */}
-        <div className="bg-base-100 rounded-2xl shadow-lg p-6">
+        <div className="bg-base-100 rounded-2xl shadow-lg p-4 sm:p-6">
           <div className="flex items-center gap-3 mb-4">
             <Shield className="h-5 w-5" />
             <h2 className="text-xl font-semibold">Privacy</h2>
           </div>
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
                 <p className="font-medium">Show Online Status</p>
                 <p className="text-sm text-base-content/70">
                   Let others see when you're online
@@ -263,8 +263,8 @@ const SettingsPage = () => {
                 }
               />
             </div>
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
                 <p className="font-medium">Read Receipts</p>
                 <p className="text-sm text-base-content/70">
                   Show when messages are read
@@ -286,21 +286,21 @@ const SettingsPage = () => {
         </div>
 
         {/* Account Section */}
-        <div className="bg-base-100 rounded-2xl shadow-lg p-6">
+        <div className="bg-base-100 rounded-2xl shadow-lg p-4 sm:p-6">
           <div className="flex items-center gap-3 mb-4">
             <User className="h-5 w-5" />
             <h2 className="text-xl font-semibold">Account</h2>
           </div>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 border border-base-300 rounded-lg">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border border-base-300 rounded-lg">
+              <div className="min-w-0">
                 <p className="font-medium">Email</p>
                 <p className="text-sm text-base-content/70">{user?.email}</p>
               </div>
               <button className="btn btn-outline btn-sm">Change Email</button>
             </div>
-            <div className="flex items-center justify-between p-4 border border-base-300 rounded-lg">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border border-base-300 rounded-lg">
+              <div className="min-w-0">
                 <p className="font-medium">Password</p>
                 <p className="text-sm text-base-content/70">
                   Last changed 30 days ago
@@ -314,11 +314,11 @@ const SettingsPage = () => {
         </div>
 
         {/* Danger Zone */}
-        <div className="bg-base-100 rounded-2xl shadow-lg p-6 border border-error/20">
+        <div className="bg-base-100 rounded-2xl shadow-lg p-4 sm:p-6 border border-error/20">
           <h2 className="text-xl font-semibold text-error mb-4">Danger Zone</h2>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 border border-base-300 rounded-lg">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border border-base-300 rounded-lg">
+              <div className="min-w-0">
                 <p className="font-medium">Download Your Data</p>
                 <p className="text-sm text-base-content/70">
                   Download a copy of your data
@@ -332,8 +332,8 @@ const SettingsPage = () => {
                 Download
               </button>
             </div>
-            <div className="flex items-center justify-between p-4 border border-error rounded-lg">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border border-error rounded-lg">
+              <div className="min-w-0">
                 <p className="font-medium text-error">Delete Account</p>
                 <p className="text-sm text-base-content/70">
                   Permanently delete your account and all data

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { THEMES } from "../constants";
 
-export const useThemeStore = create((set, get) => ({
+export const useThemeStore = create((set) => ({
   theme: (() => {
     const stored = localStorage.getItem("chat-theme") || "coffee";
     document.documentElement.setAttribute("data-theme", stored);

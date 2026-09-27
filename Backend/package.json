@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "test": "jest --coverage",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "test:watch": "jest --watch"
   },
   "keywords": [],
@@ -25,6 +25,7 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.1",
+    "openid-client": "^6.8.2",
     "socket.io": "^4.8.1",
     "xss": "^1.0.15"
   },

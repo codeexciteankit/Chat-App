@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   MessageSquare,
   Eye,
@@ -10,6 +10,9 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../Store/useAuthStore";
+import { API_URL, axiosInstance } from "../lib/axios";
+import GoogleIcon from "../components/GoogleIcon";
+import toast from "react-hot-toast";
 
 // Constants
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -28,6 +31,25 @@ const SignUpPage = () => {
     password: "",
   });
   const [errors, setErrors] = useState({});
+  const [oidc, setOidc] = useState({ enabled: false, provider: "Google" });
+
+  useEffect(() => {
+    let active = true;
+    axiosInstance.get("/auth/oauth/oidc/status")
+      .then((response) => active && setOidc(response.data))
+      .catch(() => active && setOidc({ enabled: false, provider: "Google" }));
+    return () => { active = false; };
+  }, []);
+
+  const startOidc = useCallback(() => {
+    if (!oidc.enabled) {
+      toast.error("Google sign-in has not been configured yet.");
+      return;
+    }
+    const url = new URL(`${API_URL}/auth/oauth/oidc/start`, window.location.origin);
+    url.searchParams.set("returnTo", "/");
+    window.location.assign(url.toString());
+  }, [oidc.enabled]);
 
   /**
    * Validate form fields
@@ -107,11 +129,11 @@ const SignUpPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+    <div className="min-h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="w-full max-w-md">
         <form
           onSubmit={handleSubmit}
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8"
+          className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-5 sm:p-8"
         >
           {/* Header */}
           <div className="text-center mb-8">
@@ -284,6 +306,22 @@ const SignUpPage = () => {
                 "Create Account"
               )}
             </button>
+
+            <button
+              type="button"
+              onClick={startOidc}
+              disabled={isSigningUp || !oidc.enabled}
+              title={oidc.enabled ? "Continue with Google" : "Google sign-in needs server configuration"}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+            >
+              <GoogleIcon />
+              Continue with Google
+            </button>
+            {!oidc.enabled && (
+              <p className="text-center text-xs text-gray-500 dark:text-gray-400">
+                Google sign-in is unavailable until it is configured on the server.
+              </p>
+            )}
           </div>
 
           {/* Sign In Link */}

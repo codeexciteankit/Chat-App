@@ -1,7 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { MessageSquare, Eye, EyeOff, Mail, Lock, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../Store/useAuthStore";
+import { API_URL, axiosInstance } from "../lib/axios";
+import { toast } from "react-hot-toast";
+import GoogleIcon from "../components/GoogleIcon";
 
 // Constants
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -39,6 +42,40 @@ const LoginPage = () => {
     password: "",
   });
   const [errors, setErrors] = useState({});
+  const [oidc, setOidc] = useState({ enabled: false, provider: "Google" });
+
+  useEffect(() => {
+    let active = true;
+    axiosInstance.get("/auth/oauth/oidc/status")
+      .then((response) => active && setOidc(response.data))
+      .catch(() => active && setOidc({ enabled: false, provider: "Google" }));
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    const error = new URLSearchParams(window.location.search).get("oauth");
+    const messages = {
+      cancelled: "Single sign-on was cancelled.",
+      invalid_state: "Your sign-in request expired or could not be verified. Please try again.",
+      account_linking_conflict: "An account with this email already exists. Sign in first to link it.",
+      invalid_identity: "Your identity provider did not provide a verified email address.",
+      authentication_failure: "Single sign-on could not complete. Please try again.",
+    };
+    if (error && messages[error]) {
+      toast.error(messages[error]);
+      window.history.replaceState({}, "", "/login");
+    }
+  }, []);
+
+  const startOidc = useCallback(() => {
+    if (!oidc.enabled) {
+      toast.error("Google sign-in has not been configured yet.");
+      return;
+    }
+    const url = new URL(`${API_URL}/auth/oauth/oidc/start`, window.location.origin);
+    url.searchParams.set("returnTo", "/");
+    window.location.assign(url.toString());
+  }, [oidc.enabled]);
 
   /**
    * Validate form fields
@@ -105,11 +142,11 @@ const LoginPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
+    <div className="min-h-full grid lg:grid-cols-2">
       {/* Left Side - Form */}
       <form
         onSubmit={handleSubmit}
-        className="flex items-center justify-center p-6 sm:p-12 bg-white dark:bg-gray-900"
+        className="min-h-full flex items-center justify-center p-5 sm:p-12 bg-white dark:bg-gray-900"
       >
         <div className="w-full max-w-md space-y-8">
           {/* Header */}
@@ -264,6 +301,28 @@ const LoginPage = () => {
               "Sign In"
             )}
           </button>
+
+          <>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300 dark:border-gray-600" /></div>
+              <div className="relative flex justify-center text-xs"><span className="bg-white dark:bg-gray-900 px-2 text-gray-500">or</span></div>
+            </div>
+            <button
+              type="button"
+              onClick={startOidc}
+              disabled={isLoggingIn || !oidc.enabled}
+              title={oidc.enabled ? "Continue with Google" : "Google sign-in needs server configuration"}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <GoogleIcon />
+              Continue with Google
+            </button>
+            {!oidc.enabled && (
+              <p className="text-center text-xs text-gray-500 dark:text-gray-400">
+                Google sign-in is unavailable until it is configured on the server.
+              </p>
+            )}
+          </>
 
           {/* Sign Up Link */}
           <p className="text-center text-sm text-gray-600 dark:text-gray-400">

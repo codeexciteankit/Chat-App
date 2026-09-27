@@ -22,9 +22,23 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
+      // OAuth-only accounts deliberately have no local password. Password
+      // login remains unavailable for them until a password is explicitly set.
+      required: function () {
+        return !this.oauthOnly;
+      },
       minlength: [6, "Password must be at least 6 characters"],
       select: false, // Don't include in queries by default for security
+    },
+    oauthOnly: {
+      type: Boolean,
+      default: false,
+      select: false,
+    },
+    isDisabled: {
+      type: Boolean,
+      default: false,
+      select: false,
     },
     profilePic: {
       type: String,
@@ -34,6 +48,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       maxlength: [500, "Bio cannot exceed 500 characters"],
       default: "",
+    },
+    blockedUsers: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "User",
+      default: [],
+      select: false,
     },
     phone: {
       type: String,
@@ -45,16 +65,23 @@ const userSchema = new mongoose.Schema(
       },
       default: "",
     },
+    lastSeen: {
+      type: Date,
+      default: Date.now,
+      select: false,
+    },
   },
   {
     timestamps: true,
     toJSON: {
       transform: (doc, ret) => {
         delete ret.password;
+        delete ret.oauthOnly;
+        delete ret.isDisabled;
         return ret;
       },
     },
-  }
+  },
 );
 
 // Note: Email index is automatically created by 'unique: true' in schema

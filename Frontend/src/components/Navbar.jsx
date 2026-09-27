@@ -1,7 +1,9 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, LogOut, User, Settings } from "lucide-react";
+import { Menu, LogOut, User, Settings, Users } from "lucide-react";
 import { useAuthStore } from "../Store/useAuthStore";
+import { useFriendStore } from "../Store/useFriendStore";
+import FriendsModal from "./FriendsModal";
 
 // Navbar link configuration
 const NAV_LINKS = [
@@ -11,6 +13,8 @@ const NAV_LINKS = [
 
 const Navbar = () => {
   const { user, logout } = useAuthStore();
+  const { pendingRequests } = useFriendStore();
+  const [isFriendsModalOpen, setIsFriendsModalOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = useCallback(async () => {
@@ -38,7 +42,21 @@ const Navbar = () => {
 
     return (
       <>
-        <div className="hidden lg:flex gap-1">
+        <div className="hidden lg:flex gap-1 items-center">
+          <button
+            onClick={() => setIsFriendsModalOpen(true)}
+            className="btn btn-ghost btn-sm gap-1.5 relative"
+            aria-label="Manage Contacts"
+          >
+            <Users size={16} />
+            <span>Contacts</span>
+            {pendingRequests.length > 0 && (
+              <span className="badge badge-error badge-xs font-bold">
+                {pendingRequests.length}
+              </span>
+            )}
+          </button>
+
           {NAV_LINKS.map(({ label, to }) => (
             <Link key={label} to={to} className="btn btn-ghost btn-sm">
               {label}
@@ -80,14 +98,29 @@ const Navbar = () => {
           </span>
         </li>
 
-        {NAV_LINKS.map(({ label, to, icon: Icon }) => (
-          <li key={label}>
-            <Link to={to} className="gap-2">
-              <Icon size={16} />
-              {label}
-            </Link>
-          </li>
-        ))}
+        <li>
+          <button onClick={() => setIsFriendsModalOpen(true)} className="gap-2">
+            <Users size={16} />
+            <span>Contacts</span>
+            {pendingRequests.length > 0 && (
+              <span className="badge badge-error badge-xs font-bold ml-auto">
+                {pendingRequests.length}
+              </span>
+            )}
+          </button>
+        </li>
+
+        {NAV_LINKS.map(({ label, to, icon }) => {
+          const NavIcon = icon;
+          return (
+            <li key={label}>
+              <Link to={to} className="gap-2">
+                <NavIcon size={16} />
+                {label}
+              </Link>
+            </li>
+          );
+        })}
 
         <li>
           <button onClick={handleLogout} className="text-error gap-2">
@@ -100,52 +133,62 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="navbar bg-base-100 border-b border-base-300 px-4 h-16 flex-shrink-0 shadow-sm">
-      {/* Brand - Left */}
-      <div className="navbar-start">
-        <Link
-          to="/"
-          className="text-xl font-bold tracking-tight hover:opacity-80 transition-opacity duration-200"
-        >
-          ChatApp
-        </Link>
-      </div>
-
-      {/* Welcome Text - Center (Desktop only) */}
-      <div className="navbar-center hidden lg:flex">
-        {user && (
-          <span className="text-sm opacity-70 truncate max-w-xs">
-            Welcome,{" "}
-            <span className="font-semibold">{user.fullname || user.email}</span>
-          </span>
-        )}
-      </div>
-
-      {/* Auth Actions - Right */}
-      <div className="navbar-end gap-2">
-        {/* Desktop Navigation */}
-        {renderAuthButtons()}
-
-        {/* Mobile Menu */}
-        <div className="dropdown dropdown-end lg:hidden">
-          <button
-            tabIndex={0}
-            className="btn btn-ghost btn-sm"
-            aria-label="Open navigation menu"
-            aria-haspopup="true"
+    <>
+      <nav className="navbar bg-base-100 border-b border-base-300 px-3 sm:px-4 h-14 sm:h-16 flex-shrink-0 shadow-sm">
+        {/* Brand - Left */}
+        <div className="navbar-start">
+          <Link
+            to="/"
+            className="text-lg sm:text-xl font-bold tracking-tight hover:opacity-80 transition-opacity duration-200"
           >
-            <Menu size={20} />
-          </button>
-
-          <ul
-            tabIndex={0}
-            className="menu menu-sm dropdown-content mt-3 p-2 shadow bg-base-100 rounded-lg w-56 z-50 border border-base-300"
-          >
-            {renderMobileMenu()}
-          </ul>
+            ChatApp
+          </Link>
         </div>
-      </div>
-    </nav>
+
+        {/* Welcome Text - Center (Desktop only) */}
+        <div className="navbar-center hidden lg:flex">
+          {user && (
+            <span className="text-sm opacity-70 truncate max-w-xs">
+              Welcome,{" "}
+              <span className="font-semibold">
+                {user.fullname || user.email}
+              </span>
+            </span>
+          )}
+        </div>
+
+        {/* Auth Actions - Right */}
+        <div className="navbar-end gap-2">
+          {/* Desktop Navigation */}
+          {renderAuthButtons()}
+
+          {/* Mobile Menu */}
+          <div className="dropdown dropdown-end lg:hidden">
+            <button
+              tabIndex={0}
+              className="btn btn-ghost btn-sm"
+              aria-label="Open navigation menu"
+              aria-haspopup="true"
+            >
+              <Menu size={20} />
+            </button>
+
+            <ul
+              tabIndex={0}
+              className="menu menu-sm dropdown-content mt-3 p-2 shadow bg-base-100 rounded-lg w-56 z-50 border border-base-300"
+            >
+              {renderMobileMenu()}
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      {/* Friends & Requests Modal */}
+      <FriendsModal
+        isOpen={isFriendsModalOpen}
+        onClose={() => setIsFriendsModalOpen(false)}
+      />
+    </>
   );
 };
 

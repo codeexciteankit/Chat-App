@@ -62,6 +62,13 @@ export const validateEnv = () => {
     throw new Error("❌ MONGODB_URI must be a valid MongoDB connection string");
   }
 
+  // OIDC is opt-in, but partial configuration is never safe to run with.
+  const oidcVars = ["OIDC_ISSUER_URL", "OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET", "OIDC_REDIRECT_URI"];
+  const configuredOidcVars = oidcVars.filter((name) => process.env[name]);
+  if (configuredOidcVars.length > 0 && configuredOidcVars.length !== oidcVars.length) {
+    throw new Error(`OIDC configuration is incomplete. Set all of: ${oidcVars.join(", ")}`);
+  }
+
   console.log("✅ Environment variables validated successfully");
   console.log(`📝 Running in ${process.env.NODE_ENV} mode`);
 };

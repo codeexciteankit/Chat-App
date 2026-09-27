@@ -17,7 +17,7 @@ const MessageInput = () => {
 
   const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
-  const { sendMessage, startTyping, stopTyping } = useChatStore();
+  const { sendMessage, startTyping, stopTyping, selectedUser } = useChatStore();
 
   // Validate and process image
   const handleImageChange = useCallback((e) => {
@@ -63,6 +63,9 @@ const MessageInput = () => {
       const newText = e.target.value;
       setText(newText);
 
+      // Only emit typing indicator if a user is selected
+      if (!selectedUser) return;
+
       // Trigger typing indicator
       startTyping();
 
@@ -71,12 +74,12 @@ const MessageInput = () => {
         clearTimeout(typingTimeoutRef.current);
       }
 
-      // Set new timeout to stop typing
+      // Set new timeout to stop typing after inactivity
       typingTimeoutRef.current = setTimeout(() => {
         stopTyping();
       }, TYPING_TIMEOUT);
     },
-    [startTyping, stopTyping],
+    [startTyping, stopTyping, selectedUser],
   );
 
   // Send message
@@ -116,7 +119,7 @@ const MessageInput = () => {
   );
 
   return (
-    <div className="p-4 w-full bg-base-100">
+    <div className="relative p-2 sm:p-4 w-full bg-base-100">
       {/* Image Preview */}
       {imagePreview && (
         <div className="mb-3 flex items-center gap-2">
@@ -140,7 +143,7 @@ const MessageInput = () => {
 
       {/* Emoji Picker Popover */}
       {showEmojiPicker && (
-        <div className="absolute bottom-20 left-4 z-40 shadow-2xl rounded-xl">
+        <div className="absolute bottom-full left-2 sm:left-4 mb-2 z-40 w-[calc(100vw-1rem)] max-w-sm overflow-hidden shadow-2xl rounded-xl">
           <EmojiPicker
             onEmojiClick={handleEmojiClick}
             theme="auto"
@@ -153,12 +156,15 @@ const MessageInput = () => {
       )}
 
       {/* Message Input Form */}
-      <form onSubmit={handleSendMessage} className="flex items-end gap-2">
+      <form
+        onSubmit={handleSendMessage}
+        className="flex items-end gap-1 sm:gap-2"
+      >
         {/* Text Input + Action Buttons */}
-        <div className="flex-1 flex gap-2">
+        <div className="min-w-0 flex-1 flex gap-1 sm:gap-2">
           <input
             type="text"
-            className="flex-1 input input-bordered rounded-lg input-sm sm:input-md focus:outline-none focus:ring-2 focus:ring-primary"
+            className="min-w-0 flex-1 input input-bordered rounded-lg input-sm sm:input-md focus:outline-none focus:ring-2 focus:ring-primary"
             placeholder="Type a message..."
             value={text}
             onChange={handleInputChange}
@@ -180,7 +186,7 @@ const MessageInput = () => {
           {/* Emoji Button */}
           <button
             type="button"
-            className={`flex btn btn-circle btn-sm transition-colors ${
+            className={`flex shrink-0 btn btn-circle btn-sm transition-colors ${
               showEmojiPicker ? "bg-primary text-white" : "btn-ghost"
             }`}
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
@@ -193,7 +199,7 @@ const MessageInput = () => {
           {/* Image Button */}
           <button
             type="button"
-            className={`flex btn btn-circle btn-sm transition-colors ${
+            className={`flex shrink-0 btn btn-circle btn-sm transition-colors ${
               imagePreview ? "bg-primary text-white" : "btn-ghost"
             }`}
             onClick={() => fileInputRef.current?.click()}
@@ -207,7 +213,7 @@ const MessageInput = () => {
         {/* Send Button */}
         <button
           type="submit"
-          className="btn btn-sm btn-circle btn-primary"
+          className="shrink-0 btn btn-sm btn-circle btn-primary"
           disabled={(!text.trim() && !imagePreview) || isSending}
           aria-label="Send message"
         >
